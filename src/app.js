@@ -4,6 +4,8 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import { errorHandler } from './middleware/errorHandler.js'
 import authRoutes from './routes/auth.js'
+import pipelineRoutes from './routes/pipeline.js'
+import templateRoutes from './routes/template.js'
 
 const app = express()
 
@@ -23,7 +25,8 @@ app.use(limiter)
 app.get('/health', (_, res) => res.json({ status: 'ok' }))
 
 app.use('/api/auth', authRoutes)
-// other routes will be added here progressively
+app.use('/api/pipelines', pipelineRoutes)
+app.use('/api/templates', templateRoutes)
 
 app.use(errorHandler)
 

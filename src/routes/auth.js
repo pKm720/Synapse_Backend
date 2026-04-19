@@ -73,7 +73,8 @@ router.post('/refresh', async (req, res, next) => {
 
     res.json(tokens)
   } catch (error) {
-    next(new ApiError(401, 'Invalid or expired refresh token'))
+    console.error("DEBUG REFRESH ERROR:", error.message);
+    next(new ApiError(401, `Refresh failed: ${error.message}`));
   }
 })
 
