@@ -1,10 +1,24 @@
+import { slackConnector } from '../integrations/slack.js'
+import { gmailConnector } from '../integrations/gmail.js'
+
 export const integrationNode = async (config, input) => {
-  // Just a placeholder routing logic. Full implementation will be in Phase 6.
+  // We assume 'userId' is magically passed through the graphRunner context
+  // or injected. For this implementation, we will assume it's part of the config 
+  // or injected explicitly before we reach here.
+  const userId = config.injectedUserId || 'dummy_user_for_dev'
+
   if (config.provider === 'slack') {
-    return { status: 'mock_slack_message_sent', channel: config.channel }
+    return await slackConnector.postMessage(userId, config.channel, config.text || input.message)
   }
+  
   if (config.provider === 'gmail') {
-    return { status: 'mock_email_sent', to: config.to }
+    return await gmailConnector.sendEmail(
+      userId, 
+      config.to, 
+      config.subject || 'Synapse Action', 
+      config.body || input.text
+    )
   }
-  return { status: 'unknown_integration' }
+  
+  return { status: 'failed', error: 'Unknown integration provider configuration' }
 }
