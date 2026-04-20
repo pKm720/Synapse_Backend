@@ -7,6 +7,8 @@ import authRoutes from './routes/auth.js'
 import pipelineRoutes from './routes/pipeline.js'
 import templateRoutes from './routes/template.js'
 import runRoutes from './routes/run.js'
+import deployRoutes from './routes/deploy.js'
+import publicRunRoutes from './routes/publicRun.js'
 
 const app = express()
 
@@ -28,7 +30,9 @@ app.get('/health', (_, res) => res.json({ status: 'ok' }))
 app.use('/api/auth', authRoutes)
 app.use('/api/pipelines', pipelineRoutes)
 app.use('/api/templates', templateRoutes)
+app.use('/api/public', publicRunRoutes)
 app.use('/api', runRoutes) // runRoutes covers /api/pipelines/:id/run and /api/runs
+app.use('/api/deploy', deployRoutes)
 
 app.use(errorHandler)
 
