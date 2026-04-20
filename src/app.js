@@ -9,6 +9,7 @@ import templateRoutes from './routes/template.js'
 import runRoutes from './routes/run.js'
 import deployRoutes from './routes/deploy.js'
 import publicRunRoutes from './routes/publicRun.js'
+import { setupSwagger } from '../swagger.js'
 
 const app = express()
 
@@ -24,6 +25,9 @@ const limiter = rateLimit({
   legacyHeaders: false,
 })
 app.use(limiter)
+
+// Setup Swagger Docs
+setupSwagger(app)
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }))
 

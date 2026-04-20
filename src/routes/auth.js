@@ -13,6 +13,27 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken }
 }
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Successfully registered
+ */
 router.post('/register', async (req, res, next) => {
   try {
     const { email, password } = req.body
@@ -35,6 +56,27 @@ router.post('/register', async (req, res, next) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Log in to get tokens
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successfully authenticated
+ */
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body
@@ -55,6 +97,25 @@ router.post('/login', async (req, res, next) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successfully refreshed
+ */
 router.post('/refresh', async (req, res, next) => {
   try {
     const { refreshToken } = req.body

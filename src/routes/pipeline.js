@@ -8,6 +8,35 @@ const router = express.Router()
 
 router.use(protect)
 
+/**
+ * @swagger
+ * /api/pipelines:
+ *   post:
+ *     summary: Create a new pipeline
+ *     tags: [Pipelines]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               nodes:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               edges:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       201:
+ *         description: Pipeline created
+ */
 // POST /pipelines - create new pipeline
 router.post('/', async (req, res, next) => {
   try {
@@ -31,6 +60,18 @@ router.post('/', async (req, res, next) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/pipelines:
+ *   get:
+ *     summary: List all user pipelines
+ *     tags: [Pipelines]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of pipelines
+ */
 // GET /pipelines - list user's pipelines
 router.get('/', async (req, res, next) => {
   try {
@@ -43,6 +84,24 @@ router.get('/', async (req, res, next) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/pipelines/{id}:
+ *   get:
+ *     summary: Get a specific pipeline
+ *     tags: [Pipelines]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Pipeline data
+ */
 // GET /pipelines/:id - fetch single pipeline
 router.get('/:id', async (req, res, next) => {
   try {

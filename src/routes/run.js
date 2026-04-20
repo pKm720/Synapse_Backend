@@ -9,6 +9,24 @@ import { runPipeline } from '../services/graphRunner.js'
 const router = express.Router()
 router.use(protect)
 
+/**
+ * @swagger
+ * /api/pipelines/{id}/run:
+ *   post:
+ *     summary: Execute a pipeline run
+ *     tags: [Execution Engine]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Run completed successfully
+ */
 // POST /pipelines/:id/run - trigger an immediate run
 router.post('/pipelines/:id/run', async (req, res, next) => {
   try {
@@ -36,6 +54,24 @@ router.post('/pipelines/:id/run', async (req, res, next) => {
   }
 })
 
+/**
+ * @swagger
+ * /api/pipelines/{id}/runs:
+ *   get:
+ *     summary: Get run history for a pipeline
+ *     tags: [Execution Engine]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Array of runs
+ */
 // GET /pipelines/:id/runs - fetch run history for a pipeline
 router.get('/pipelines/:id/runs', async (req, res, next) => {
   try {
