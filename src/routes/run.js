@@ -4,7 +4,7 @@ import Run from '../models/Run.js'
 import { ApiError } from '../utils/ApiError.js'
 import { protect } from '../middleware/auth.js'
 import { runLogger } from '../services/runLogger.js'
-import { runPipeline } from '../services/graphRunner.js'
+import { pipelineQueue } from '../workers/pipelineWorker.js'
 
 const router = express.Router()
 router.use(protect)
@@ -39,16 +39,14 @@ router.post('/pipelines/:id/run', async (req, res, next) => {
     // 1. Create the Run log record immediately
     const runDoc = await runLogger.createRun(pipeline._id, triggerInput)
     
-    // 2. Start execution in background (we don't wait for it unless it's a synchronous API deployment)
-    // For now we will await it directly to satisfy the CRUD phase tests
-    try {
-      const output = await runPipeline(pipeline, triggerInput, runDoc._id)
-      await runLogger.markRunCompleted(runDoc._id)
-      
-      res.status(200).json({ runId: runDoc._id, status: 'completed', output })
-    } catch (err) {
-      res.status(500).json({ runId: runDoc._id, status: 'failed', error: err.message })
-    }
+    // 2. Offload to BullMQ background worker to prevent blocking the HTTP thread
+    await pipelineQueue.add('manual_run', {
+      pipelineId: pipeline._id.toString(),
+      triggerInput,
+      runId: runDoc._id.toString()
+    })
+    
+    res.status(202).json({ runId: runDoc._id, status: 'queued', message: 'Run queued for background execution' })
   } catch (error) {
     next(error)
   }
@@ -121,13 +119,14 @@ router.post('/runs/:id/replay', async (req, res, next) => {
 
     const newRunDoc = await runLogger.createRun(pipeline._id, triggerInput)
     
-    try {
-      const output = await runPipeline(pipeline, triggerInput, newRunDoc._id)
-      await runLogger.markRunCompleted(newRunDoc._id)
-      res.status(200).json({ runId: newRunDoc._id, status: 'completed', output })
-    } catch (err) {
-      res.status(500).json({ runId: newRunDoc._id, status: 'failed', error: err.message })
-    }
+    // Replay runs should also be offloaded to prevent timeout crashes
+    await pipelineQueue.add('replay_run', {
+      pipelineId: pipeline._id.toString(),
+      triggerInput,
+      runId: newRunDoc._id.toString()
+    })
+    
+    res.status(202).json({ runId: newRunDoc._id, status: 'queued', message: 'Replay queued for background execution' })
   } catch (error) {
     next(error)
   }

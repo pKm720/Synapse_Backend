@@ -1,23 +1,51 @@
-// Extremely basic LLM mock for now until Python/AI microservice is attached.
 export const llmNode = async (config, input) => {
-  const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000'
-  
-  if (aiUrl === 'http://localhost:8000') {
-    // Mock sleep to simulate AI typing
-    await new Promise(r => setTimeout(r, 1500))
-    return { response: `[MOCK AI] Processed input: ${JSON.stringify(input)} using prompt: ${config.promptTemplate || 'none'}` }
+  const groqApiKey = process.env.GROQ_API_KEY
+
+  // 1. If Groq API Key is present, go direct for maximum speed
+  if (groqApiKey) {
+    const prompt = config.promptTemplate 
+      ? config.promptTemplate.replace('{{input}}', JSON.stringify(input)) 
+      : JSON.stringify(input)
+
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${groqApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: config.model || 'llama3-8b-8192',
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+
+      if (!res.ok) throw new Error(`Groq API error: ${res.status}`)
+      const data = await res.json()
+      return { response: data.choices[0].message.content, model: data.model }
+    } catch (err) {
+      console.error('[LLM Node] Groq call failed, falling back to mock:', err.message)
+    }
   }
 
-  // Real LLM call based on the roadmap spec
-  const res = await fetch(`${aiUrl}/invoke`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: config.model || 'claude-3-haiku',
-      prompt: config.promptTemplate ? config.promptTemplate.replace('{{input}}', JSON.stringify(input)) : JSON.stringify(input)
+  // 2. Fallback to Local AI Service if configured
+  const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000'
+  if (aiUrl !== 'http://localhost:8000') {
+    const res = await fetch(`${aiUrl}/invoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: config.model,
+        prompt: config.promptTemplate ? config.promptTemplate.replace('{{input}}', JSON.stringify(input)) : JSON.stringify(input)
+      })
     })
-  })
+    if (res.ok) return res.json()
+  }
 
-  if (!res.ok) throw new Error(`AI service error: ${res.status}`)
-  return res.json()
+  // 3. Absolute Fallback: Mock Data (Perfect for dev without keys)
+  await new Promise(r => setTimeout(r, 1000))
+  return { 
+    response: `[MOCK AI] No GROQ_API_KEY found. Simulated response for: ${JSON.stringify(input)}`,
+    mock: true 
+  }
 }

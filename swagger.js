@@ -10,8 +10,7 @@ const options = {
       description: 'API documentation for the Synapse backend execution engine and pipeline manager.',
     },
     servers: [
-      { url: 'http://localhost:5000', description: 'Local Development Server' },
-      { url: 'https://synapse-api-production.onrender.com', description: 'Production Server' }
+      { url: process.env.RENDER_EXTERNAL_URL || 'http://localhost:5000', description: 'API Server' }
     ],
     components: {
       securitySchemes: {

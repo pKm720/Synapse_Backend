@@ -1,32 +1,36 @@
-import { oauthManager } from '../oauthManager.js'
+import nodemailer from 'nodemailer'
 
 export const gmailConnector = {
   
   sendEmail: async (userId, to, subject, bodyText) => {
-    try {
-      const token = await oauthManager.getValidToken(userId, 'gmail')
-      
-      // Gmail API requires sending Raw Base64 string for emails.
-      // This is a simplified fetch to their REST API.
-      const rawMessage = btoa(`To: ${to}\r\nSubject: ${subject}\r\n\r\n${bodyText}`)
-      
-      const response = await fetch('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ raw: rawMessage })
-      })
-      
-      const data = await response.json()
-      if (data.error) throw new Error(data.error.message || 'Gmail API failed')
-      return { success: true, messageId: data.id }
-      
-    } catch (e) {
-      console.log('[Gmail Connector (Mock)] Fallback or Error:', e.message)
-      // Fallback for development without real tokens attached:
-      return { success: true, mock: true, messageId: 'mock_gmail_123', to, subject }
+    const user = process.env.GMAIL_USER
+    const pass = process.env.GMAIL_APP_PASS
+
+    // 1. Check for App Password credentials in .env
+    if (user && pass) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user, pass }
+        })
+
+        const info = await transporter.sendMail({
+          from: user,
+          to,
+          subject,
+          text: bodyText
+        })
+
+        return { success: true, messageId: info.messageId }
+      } catch (e) {
+        console.error('[Gmail Connector] SMTP Error:', e.message)
+        throw new Error(`Email failed: ${e.message}`)
+      }
     }
+
+    // 2. Fallback: Mock Data (No keys found)
+    console.log('[Gmail Connector (Mock)] No GMAIL_USER/PASS found. Simulating send...')
+    await new Promise(r => setTimeout(r, 1000))
+    return { success: true, mock: true, messageId: 'mock_smtp_123', to, subject }
   }
 }
