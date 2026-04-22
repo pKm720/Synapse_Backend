@@ -1,5 +1,6 @@
 import { slackConnector } from '../integrations/slack.js'
 import { gmailConnector } from '../integrations/gmail.js'
+import { discordConnector } from '../integrations/discord.js'
 
 export const integrationNode = async (config, input) => {
   // We assume 'userId' is magically passed through the graphRunner context
@@ -9,6 +10,10 @@ export const integrationNode = async (config, input) => {
 
   if (config.provider === 'slack') {
     return await slackConnector.postMessage(userId, config.channel, config.text || input.message)
+  }
+
+  if (config.provider === 'discord') {
+    return await discordConnector.postMessage(config.channelId, config.text || input.message)
   }
   
   if (config.provider === 'gmail') {
