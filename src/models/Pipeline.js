@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 
 const nodeSchema = new mongoose.Schema({
   id: String,
-  type: { type: String, enum: ['input','output','llm','transform','condition','integration'] },
+  type: { type: String, enum: ['input','output','llm','transform','condition','integration', 'synapseInput', 'synapseOutput', 'synapseLLM', 'synapseIntegration'] },
   config: mongoose.Schema.Types.Mixed,
   position: { x: Number, y: Number }
 }, { _id: false })

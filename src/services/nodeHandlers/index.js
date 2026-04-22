@@ -11,5 +11,10 @@ export const handlers = {
   llm: llmNode,
   transform: transformNode,
   condition: conditionNode,
-  integration: integrationNode
+  integration: integrationNode,
+  // New synapse types
+  synapseInput: inputNode,
+  synapseOutput: outputNode,
+  synapseLLM: llmNode,
+  synapseIntegration: integrationNode
 }

@@ -13,7 +13,13 @@ export const discordConnector = {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-           content: text 
+           embeds: [{
+             title: "✨ Synapse Intelligence Update",
+             description: text.replace(/\*\*/g, ''), // Strip ugly double asterisks for a cleaner look
+             color: 0x6366f1, // Indigo color to match brand
+             timestamp: new Date().toISOString(),
+             footer: { text: "Processed via Synapse AI" }
+           }]
         })
       })
       
@@ -26,9 +32,8 @@ export const discordConnector = {
       return { success: true, messageId: data.id, channelId }
       
     } catch (e) {
-       console.log('[Discord Connector] Live call failed:', e.message)
-       // Fallback for development without real tokens attached:
-       return { success: true, mock: true, messageId: 'mock_discord_msg_123', channelId, text }
+       console.error('[Discord Connector] Failed:', e.message)
+       throw e // Throw so the pipeline actually fails and shows the error
     }
   }
 }

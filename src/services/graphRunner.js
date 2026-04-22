@@ -36,7 +36,7 @@ export const runPipeline = async (pipeline, triggerInput, runId) => {
 
     // Build the input object for this node
     let input = {}
-    if (node.type === 'input') {
+    if (node.type === 'input' || node.type === 'synapseInput') {
       input = triggerInput || {}
     } else if (validParentEdges.length === 1) {
       input = nodeOutputs[validParentEdges[0].source]
@@ -67,7 +67,7 @@ export const runPipeline = async (pipeline, triggerInput, runId) => {
   }
 
   // The final output of the pipeline is typically the output of the terminal node(s)
-  const outputNodes = orderedNodes.filter(n => n.type === 'output')
+  const outputNodes = orderedNodes.filter(n => n.type === 'output' || n.type === 'synapseOutput')
   if (outputNodes.length === 0) return nodeOutputs[orderedNodes.at(-1).id]
   
   if (outputNodes.length === 1) return nodeOutputs[outputNodes[0].id]
@@ -83,13 +83,23 @@ const resolveConfig = (config, input) => {
   const resolved = JSON.parse(JSON.stringify(config)) // Deep copy
   
   const getValue = (path, data) => {
+    if (!data) return null;
     if (path === 'input') return typeof data === 'object' ? JSON.stringify(data) : data
     
-    // Support dot notation like {{input.response}} or {{response}}
-    const keys = path.replace(/^input\./, '').split('.')
+    const cleanPath = path.replace(/^input\./, '');
+    
+    // If data is a primitive and the path is 'input', return it
+    if (typeof data !== 'object' && (path === 'input' || path === 'value')) return data;
+
+    // Support dot notation
+    const keys = cleanPath.split('.')
     let current = data
     for (const key of keys) {
-      if (current === null || current[key] === undefined) return null
+      if (current === null || typeof current !== 'object' || current[key] === undefined) {
+        // Fallback: if we are looking for a key but data is the value itself
+        if (keys.length === 1 && data[path] === undefined) return data; 
+        return null
+      }
       current = current[key]
     }
     return current
