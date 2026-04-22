@@ -53,7 +53,10 @@ export const runPipeline = async (pipeline, triggerInput, runId) => {
       const handler = handlers[node.type]
       if (!handler) throw new Error(`No handler for node type: ${node.type}`)
 
-      const output = await executeWithRetry(handler, node, input)
+      // Resolve variables like {{input}} or {{fieldName}} inside the config
+      const resolvedConfig = resolveConfig(node.config || {}, input)
+
+      const output = await executeWithRetry(handler, resolvedConfig, input)
       nodeOutputs[node.id] = output
       await runLogger.markStepSuccess(runId, node.id, input, output)
 
@@ -75,10 +78,45 @@ export const runPipeline = async (pipeline, triggerInput, runId) => {
   }, {})
 }
 
-const executeWithRetry = async (handler, node, input, retries = 3) => {
+// Helper to replace {{variables}} with actual data
+const resolveConfig = (config, input) => {
+  const resolved = JSON.parse(JSON.stringify(config)) // Deep copy
+  
+  const getValue = (path, data) => {
+    if (path === 'input') return typeof data === 'object' ? JSON.stringify(data) : data
+    
+    // Support dot notation like {{input.response}} or {{response}}
+    const keys = path.replace(/^input\./, '').split('.')
+    let current = data
+    for (const key of keys) {
+      if (current === null || current[key] === undefined) return null
+      current = current[key]
+    }
+    return current
+  }
+
+  const deepResolve = (obj) => {
+    for (const key in obj) {
+      if (typeof obj[key] === 'string') {
+        obj[key] = obj[key].replace(/\{\{(.*?)\}\}/g, (match, path) => {
+          const val = getValue(path.trim(), input)
+          if (val === null) return match
+          return typeof val === 'object' ? JSON.stringify(val) : val
+        })
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        deepResolve(obj[key])
+      }
+    }
+  }
+
+  deepResolve(resolved)
+  return resolved
+}
+
+const executeWithRetry = async (handler, config, input, retries = 3) => {
   for (let i = 0; i < retries; i++) {
     try {
-      return await handler(node.config || {}, input)
+      return await handler(config, input)
     } catch (err) {
       if (i === retries - 1) throw err
       await new Promise(r => setTimeout(r, 300 * Math.pow(2, i)))  // Exponential backoff

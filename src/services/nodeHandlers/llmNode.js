@@ -15,16 +15,25 @@ export const llmNode = async (config, input) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: config.model || 'llama3-8b-8192',
+          model: config.model || 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: prompt }]
         })
       })
 
-      if (!res.ok) throw new Error(`Groq API error: ${res.status}`)
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error?.message || `Groq API error: ${res.status}`)
+      }
+      
       const data = await res.json()
       return { response: data.choices[0].message.content, model: data.model }
     } catch (err) {
-      console.error('[LLM Node] Groq call failed, falling back to mock:', err.message)
+      console.error('[LLM Node] Live call failed:', err.message)
+      // Fallback to mock with the actual error message so the user can debug
+      return { 
+        response: `[MOCK AI] Cloud call failed: ${err.message}. Showing mock for: ${JSON.stringify(input)}`,
+        mock: true 
+      }
     }
   }
 
